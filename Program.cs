@@ -1,7 +1,5 @@
-using Azure.Identity;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.Graph;
 using Microsoft.Identity.Web;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
@@ -44,9 +42,7 @@ builder.Services.AddControllers();
 var microsoft = builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
           .AddMicrosoftIdentityWebApp(builder.Configuration)
           .EnableTokenAcquisitionToCallDownstreamApi()
-          .AddMicrosoftGraphAppOnly(authenticationProvider => new GraphServiceClient(new ClientSecretCredential(appConfig.AzureAd.TenantId,
-                appConfig.AzureAd.ClientId,
-                appConfig.AzureAd.ClientSecret)))
+          .AddMicrosoftGraph()
           .AddInMemoryTokenCaches();
 
 var app = builder.Build();

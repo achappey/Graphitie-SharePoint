@@ -12,6 +12,7 @@ public interface IMicrosoftService
     public Task DeleteSiteMember(string siteId, string userId);
     public Task AddQuickLaunchLink(string siteUrl, string name, string link, string previousLinkName = "");
     public Task ActivateFeature(string siteUrl, string featureId);
+    public Task UpdateGroupPhoto(string groupIdd, string logoUrl);
 
 }
 
@@ -26,81 +27,85 @@ public class MicrosoftService : IMicrosoftService
         _sharePointService = sharePointService;
     }
 
+    public async Task UpdateGroupPhoto(string groupId, string logoUrl)
+    {
+        using var context = this._sharePointService.GetContext(logoUrl.ExtractSiteUrl());
+        var logoFile = await context.GetFile(logoUrl);
+
+        using var stream = new System.IO.MemoryStream(logoFile.Item2);
+
+        await this._graphServiceClient.Groups[groupId].Photo.Content
+            .Request()
+            .PutAsync(stream);
+    }
+
+
     public async Task ActivateFeature(string siteUrl, string featureId)
     {
         var guid = new Guid(featureId);
+        using var context = this._sharePointService.GetContext(siteUrl);
+        var active = await context.Site.IsFeatureActiveAsync(guid);
 
-        using (var context = this._sharePointService.GetContext(siteUrl))
+        if (!active)
         {
-            var active = await context.Site.IsFeatureActiveAsync(guid);
-
-            if (!active)
-            {
-                await context.Site.ActivateFeatureAsync(guid);
-            }
+            await context.Site.ActivateFeatureAsync(guid);
         }
+
     }
 
     public async Task AddQuickLaunchLink(string siteUrl, string name, string link, string previousLinkName = "")
     {
-        using (var context = this._sharePointService.GetContext(siteUrl))
-        {
-            var quickLaunch = context.Web.Navigation.QuickLaunch;
+        using var context = this._sharePointService.GetContext(siteUrl);
+        var quickLaunch = context.Web.Navigation.QuickLaunch;
 
-            context.Load(quickLaunch);
+        context.Load(quickLaunch);
+
+        await context.ExecuteQueryRetryAsync();
+
+        if (quickLaunch.All(r => r.Url != link))
+        {
+            NavigationNodeCreationInformation newNode = new NavigationNodeCreationInformation()
+            {
+                Title = name,
+                Url = link
+            };
+
+            if (!string.IsNullOrEmpty(previousLinkName))
+            {
+                newNode.PreviousNode = quickLaunch.FirstOrDefault(a => a.Title == previousLinkName);
+            }
+
+            quickLaunch.Add(newNode);
 
             await context.ExecuteQueryRetryAsync();
-
-            if (quickLaunch.All(r => r.Url != link))
-            {
-                NavigationNodeCreationInformation newNode = new NavigationNodeCreationInformation()
-                {
-                    Title = name,
-                    Url = link
-                };
-
-                if (!string.IsNullOrEmpty(previousLinkName))
-                {
-                    newNode.PreviousNode = quickLaunch.FirstOrDefault(a => a.Title == previousLinkName);
-                }
-
-                quickLaunch.Add(newNode);
-
-                await context.ExecuteQueryRetryAsync();
-            }
         }
+
     }
 
     public async Task AddSiteLogo(string logo, string targetSite)
     {
-        using (var context = this._sharePointService.GetContext(logo.ExtractSiteUrl()))
-        using (var targetContext = this._sharePointService.GetContext(targetSite))
-        {
-            var logoFile = await context.GetFile(logo);
+        using var context = this._sharePointService.GetContext(logo.ExtractSiteUrl());
+        using var targetContext = this._sharePointService.GetContext(targetSite);
+        var logoFile = await context.GetFile(logo);
+        var file = await targetContext.UploadToSiteAssets(logoFile.Item1, logoFile.Item2);
 
-            var file = await targetContext.UploadToSiteAssets(logoFile.Item1, logoFile.Item2);
+        targetContext.Web.SiteLogoUrl = file.ServerRelativeUrl;
+        targetContext.Web.Update();
 
-            targetContext.Web.SiteLogoUrl = file.ServerRelativeUrl;
-            targetContext.Web.Update();
-
-            await targetContext.ExecuteQueryRetryAsync();
-        }
+        await targetContext.ExecuteQueryRetryAsync();
 
     }
 
     public async Task AddSiteTheme(string themeUrl, string targetSite)
     {
-        using (var context = this._sharePointService.GetContext(themeUrl.ExtractSiteUrl()))
-        using (var targetContext = this._sharePointService.GetContext(targetSite))
-        {
-            var logoFile = await context.GetFile(themeUrl);
+        using var context = this._sharePointService.GetContext(themeUrl.ExtractSiteUrl());
+        using var targetContext = this._sharePointService.GetContext(targetSite);
+        var logoFile = await context.GetFile(themeUrl);
+        var file = await targetContext.UploadToSiteAssets(logoFile.Item1, logoFile.Item2);
 
-            var file = await targetContext.UploadToSiteAssets(logoFile.Item1, logoFile.Item2);
+        targetContext.Web.ApplyTheme(file.ServerRelativeUrl, null, null, false);
 
-            targetContext.Web.ApplyTheme(file.ServerRelativeUrl, null, null, false);
-
-            await targetContext.ExecuteQueryRetryAsync();
-        }
+        await targetContext.ExecuteQueryRetryAsync();
     }
 
     public async Task AddSiteVisitor(string siteId, string userId)
@@ -110,7 +115,7 @@ public class MicrosoftService : IMicrosoftService
             var adGroup = context.Web.EnsureUser(userId);
             context.Load(adGroup);
 
-            var spGroup = context.Web.AssociatedMemberGroup;
+            var spGroup = context.Web.AssociatedVisitorGroup;
             spGroup.Users.AddUser(adGroup);
             context.Load(spGroup, x => x.Users);
 

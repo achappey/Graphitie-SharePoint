@@ -11,6 +11,7 @@ public interface IGraphitieService
     public Task AddTheme(string themeUrl, string siteUrl);
     public Task AddQuickLaunchLink(string siteUrl, string name, string link, string previousLinkName = "");
     public Task ActivateFeature(string siteUrl, string featureId);
+    public Task UpdateGroupPhoto(string groupIdd, string logoUrl);
 
 }
 
@@ -27,6 +28,11 @@ public class GraphitieService : IGraphitieService
         _graphServiceClient = graphServiceClient;
         _microsoftService = microsoftService;
         _mapper = mapper;
+    }
+
+    public async Task UpdateGroupPhoto(string groupId, string logoUrl)
+    {
+        await this._microsoftService.UpdateGroupPhoto(groupId, logoUrl);
     }
 
     public async Task AddVisitor(string siteId, string userId)
