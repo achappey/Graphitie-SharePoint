@@ -53,5 +53,5 @@ jobs:
         with:
           app-name: 'fakton-sharepoint'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FED3538D195944BB94943829B48384D9 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_09888A6BFD0D4C1D8E804DC82EDB51BB }}
           package: .
