@@ -12,8 +12,9 @@ public interface IMicrosoftService
     public Task DeleteSiteMember(string siteId, string userId);
     public Task AddQuickLaunchLink(string siteUrl, string name, string link, string previousLinkName = "");
     public Task ActivateFeature(string siteUrl, string featureId);
-    public Task UpdateGroupPhoto(string groupIdd, string logoUrl);
-
+    public Task RenameSite(string siteUrl, string name);
+    public Task AddContentType(string siteUrl, string contentType, string listName);
+    public void DeleteContentType(string siteUrl, string contentType, string listName, bool ignoreInUseException = false);
 }
 
 public class MicrosoftService : IMicrosoftService
@@ -27,17 +28,41 @@ public class MicrosoftService : IMicrosoftService
         _sharePointService = sharePointService;
     }
 
-    public async Task UpdateGroupPhoto(string groupId, string logoUrl)
+    public void DeleteContentType(string siteUrl, string contentType, string listName, bool ignoreInUseException = false)
     {
-        using var context = this._sharePointService.GetContext(logoUrl.ExtractSiteUrl());
-        var logoFile = await context.GetFile(logoUrl);
+        using var context = this._sharePointService.GetContext(siteUrl);
 
-        using var stream = new System.IO.MemoryStream(logoFile.Item2);
-
-        await this._graphServiceClient.Groups[groupId].Photo.Content
-            .Request()
-            .PutAsync(stream);
+        context.RemoveContentTypeFromList(listName, contentType, ignoreInUseException);
     }
+
+    public async Task SetDefaultContentType(string siteUrl, string contentType, string listName)
+    {
+        using var context = this._sharePointService.GetContext(siteUrl);
+
+        await context.SetDefaultContentType(listName, contentType);
+        
+    }
+
+    public async Task AddContentType(string siteUrl, string contentType, string listName)
+    {
+        using var context = this._sharePointService.GetContext(siteUrl);
+        var currentContentTypes = await context.GetContentTypeNames();
+
+        if (!currentContentTypes.Contains(contentType))
+        {
+            using (var hubContext = this._sharePointService.GetContext("contentTypeHub"))
+            {
+                var contentTypeId = await hubContext.GetContentTypeId(contentType);
+
+                if (contentTypeId != null)
+                {
+                    await context.SupplyContentType(contentTypeId);
+                    await context.AddContentTypeToList(listName, contentType);
+                }
+            }
+        }
+    }
+
 
 
     public async Task ActivateFeature(string siteUrl, string featureId)
@@ -96,6 +121,17 @@ public class MicrosoftService : IMicrosoftService
 
     }
 
+
+    public async Task RenameSite(string siteUrl, string name)
+    {
+        using var targetContext = this._sharePointService.GetContext(siteUrl);
+
+        targetContext.Web.Title = name;
+        targetContext.Web.Update();
+
+        await targetContext.ExecuteQueryRetryAsync();
+
+    }
     public async Task AddSiteTheme(string themeUrl, string targetSite)
     {
         using var context = this._sharePointService.GetContext(themeUrl.ExtractSiteUrl());
@@ -110,33 +146,29 @@ public class MicrosoftService : IMicrosoftService
 
     public async Task AddSiteVisitor(string siteId, string userId)
     {
-        using (var context = this._sharePointService.GetContext(siteId))
-        {
-            var adGroup = context.Web.EnsureUser(userId);
-            context.Load(adGroup);
+        using var context = this._sharePointService.GetContext(siteId);
+        var adGroup = context.Web.EnsureUser(userId);
+        context.Load(adGroup);
 
-            var spGroup = context.Web.AssociatedVisitorGroup;
-            spGroup.Users.AddUser(adGroup);
-            context.Load(spGroup, x => x.Users);
+        var spGroup = context.Web.AssociatedVisitorGroup;
+        spGroup.Users.AddUser(adGroup);
+        context.Load(spGroup, x => x.Users);
 
-            await context.ExecuteQueryRetryAsync();
-        }
+        await context.ExecuteQueryRetryAsync();
     }
 
 
     public async Task AddSiteMember(string siteId, string userId)
     {
-        using (var context = this._sharePointService.GetContext(siteId))
-        {
-            var adGroup = context.Web.EnsureUser(userId);
-            context.Load(adGroup);
+        using var context = this._sharePointService.GetContext(siteId);
+        var adGroup = context.Web.EnsureUser(userId);
+        context.Load(adGroup);
 
-            var spGroup = context.Web.AssociatedMemberGroup;
-            spGroup.Users.AddUser(adGroup);
-            context.Load(spGroup, x => x.Users);
+        var spGroup = context.Web.AssociatedMemberGroup;
+        spGroup.Users.AddUser(adGroup);
+        context.Load(spGroup, x => x.Users);
 
-            await context.ExecuteQueryRetryAsync();
-        }
+        await context.ExecuteQueryRetryAsync();
     }
 
     public async Task DeleteSiteMember(string siteId, string userId)
