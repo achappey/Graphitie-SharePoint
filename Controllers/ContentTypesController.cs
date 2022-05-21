@@ -19,21 +19,21 @@ public class ContentTypesController : ControllerBase
         _microsoftService = microsoftService;
     }
     
-    [HttpPost("Add")]
+    [HttpPost("Add", Name = "AddContentType")]
     public async Task AddContentType(string siteUrl, string name, string listTitle)
     {
         await _microsoftService.AddContentType(siteUrl, name, listTitle);
 
     }
 
-    [HttpPost("Default")]
+    [HttpPost("Default", Name = "SetDefaultContentType")]
     public async Task SetDefaultContentType(string siteUrl, string name, string listTitle)
     {
         await _microsoftService.SetDefaultContentType(siteUrl, name, listTitle);
 
     }
 
-    [HttpDelete("Delete")]
+    [HttpDelete("Delete", Name = "DeleteContentType")]
     public IActionResult DeleteContentType(string siteUrl, string name, string listTitle, bool ignoreInUseException = false)
     {
         _microsoftService.DeleteContentType(siteUrl, name, listTitle, ignoreInUseException);
