@@ -7,9 +7,11 @@ public interface IMicrosoftService
 {
     public Task AddSiteLogo(string logo, string targetSite);
     public Task AddSiteTheme(string theme, string targetSite);
+    public Task AddSiteOwner(string siteId, string userId);
     public Task AddSiteVisitor(string siteId, string userId);
     public Task AddSiteMember(string siteId, string userId);
     public Task DeleteSiteMember(string siteId, string userId);
+    public Task DeleteSiteOwner(string siteId, string userId);
     public Task AddQuickLaunchLink(string siteUrl, string name, string link, string previousLinkName = "");
     public Task ActivateFeature(string siteUrl, string featureId);
     public Task RenameSite(string siteUrl, string name);
@@ -57,10 +59,12 @@ public class MicrosoftService : IMicrosoftService
                 if (contentTypeId != null)
                 {
                     await context.SupplyContentType(contentTypeId);
-                    await context.AddContentTypeToList(listName, contentType);
+                    
                 }
             }
         }
+
+        await context.AddContentTypeToList(listName, contentType);
     }
 
 
@@ -157,6 +161,18 @@ public class MicrosoftService : IMicrosoftService
         await context.ExecuteQueryRetryAsync();
     }
 
+    public async Task AddSiteOwner(string siteId, string userId)
+    {
+        using var context = this._sharePointService.GetContext(siteId);
+        var adGroup = context.Web.EnsureUser(userId);
+        context.Load(adGroup);
+
+        var spGroup = context.Web.AssociatedOwnerGroup;
+        spGroup.Users.AddUser(adGroup);
+        context.Load(spGroup, x => x.Users);
+
+        await context.ExecuteQueryRetryAsync();
+    }
 
     public async Task AddSiteMember(string siteId, string userId)
     {
@@ -187,4 +203,18 @@ public class MicrosoftService : IMicrosoftService
     }
 
 
+    public async Task DeleteSiteOwner(string siteId, string userId)
+    {
+        using (var context = this._sharePointService.GetContext(siteId))
+        {
+            var adGroup = context.Web.EnsureUser(userId);
+            context.Load(adGroup);
+
+            var spGroup = context.Web.AssociatedOwnerGroup;
+            spGroup.Users.Remove(adGroup);
+            context.Load(spGroup, x => x.Users);
+
+            await context.ExecuteQueryRetryAsync();
+        }
+    }
 }

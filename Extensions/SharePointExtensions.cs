@@ -72,10 +72,11 @@ public static class SharePointExtensions
         if (!contentTypes.Select(t => t.StringId).Contains(item))
         {
             var sub = new Microsoft.SharePoint.Client.Taxonomy.ContentTypeSync.ContentTypeSubscriber(context);
+
             context.Load(sub);
 
             await context.ExecuteQueryRetryAsync();
-
+            
             var res = sub.SyncContentTypesFromHubSite2(
                 context.Url,
                 new List<string>() {
@@ -83,6 +84,7 @@ public static class SharePointExtensions
                 });
 
             await context.ExecuteQueryRetryAsync();
+            
         }
     }
 
