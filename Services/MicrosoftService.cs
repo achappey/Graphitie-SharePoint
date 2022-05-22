@@ -59,15 +59,15 @@ public class MicrosoftService : IMicrosoftService
                 if (contentTypeId != null)
                 {
                     await context.SupplyContentType(contentTypeId);
-                    
+
+                    await context.AddContentTypeToList(listName, contentType);
                 }
             }
         }
-
-        await context.AddContentTypeToList(listName, contentType);
+        else {
+            await context.AddContentTypeToList(listName, contentType);
+        }
     }
-
-
 
     public async Task ActivateFeature(string siteUrl, string featureId)
     {
