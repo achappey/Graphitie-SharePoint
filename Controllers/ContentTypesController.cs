@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Graphitie.Services;
-using Microsoft.AspNetCore.Authorization;
 
 namespace Graphitie.Controllers.Microsoft;
 
 [ApiController]
 [Route("[controller]")]
-[Authorize]
 public class ContentTypesController : ControllerBase
 {
     private readonly ILogger<ContentTypesController> _logger;
