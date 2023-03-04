@@ -64,27 +64,17 @@ public static class SharePointExtensions
     public static async Task SupplyContentType(this ClientContext context, string item)
     {
         var contentTypes = context.Web.ContentTypes;
-
-        context.Load(contentTypes, u => u.Include(a => a.StringId));
-
         await context.ExecuteQueryRetryAsync();
 
         if (!contentTypes.Select(t => t.StringId).Contains(item))
         {
             var sub = new Microsoft.SharePoint.Client.Taxonomy.ContentTypeSync.ContentTypeSubscriber(context);
-
-            context.Load(sub);
-
-            await context.ExecuteQueryRetryAsync();
-            
             var res = sub.SyncContentTypesFromHubSite2(
                 context.Url,
                 new List<string>() {
-                    item
+                item
                 });
-
             await context.ExecuteQueryRetryAsync();
-            
         }
     }
 
@@ -132,16 +122,12 @@ public static class SharePointExtensions
 
     public static async Task<Microsoft.SharePoint.Client.File> UploadToSiteAssets(this ClientContext context, string fileName, byte[] file)
     {
-        var list = context.Web.Lists.EnsureSiteAssetsLibrary();
-        context.Load(list, i => i.RootFolder);
-
-        await context.ExecuteQueryRetryAsync();
-
-        var folder = context.Web.GetFolderById(list.RootFolder.UniqueId);
-
-        using (MemoryStream stream = new MemoryStream(file))
+        using (var stream = new MemoryStream(file))
         {
+            var list = context.Web.Lists.EnsureSiteAssetsLibrary();
+            var folder = context.Web.GetFolderById(list.RootFolder.UniqueId);
             return await folder.UploadFileAsync(fileName, stream, true);
         }
+
     }
 }

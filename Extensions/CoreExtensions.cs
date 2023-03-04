@@ -5,9 +5,8 @@ public static class CoreExtensions
 {
     public static string ExtractSiteUrl(this string url)
     {
-        var items = url.Split('/');
-
-        return string.Format("/sites/{0}", items[2]);
+        return $"/sites/{url.Split('/')[2]}";
     }
+
 
 }
