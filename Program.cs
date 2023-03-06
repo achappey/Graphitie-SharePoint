@@ -42,7 +42,7 @@ var microsoft = builder.Services.AddAuthentication(OpenIdConnectDefaults.Authent
           .EnableTokenAcquisitionToCallDownstreamApi()
             .AddMicrosoftGraphAppOnly(authenticationProvider => new GraphServiceClient(new ClientSecretCredential(appConfig.AzureAd.TenantId,
                 appConfig.AzureAd.ClientId,
-                appConfig.AzureAd.ClientSecret)))      
+                appConfig.AzureAd.ClientSecret)))
           .AddInMemoryTokenCaches();
 
 var app = builder.Build();

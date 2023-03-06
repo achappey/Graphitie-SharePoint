@@ -19,9 +19,8 @@ public class SharePointService : ISharePointService
 
     private string ToTenantUrl(string site)
     {
-        return string.IsNullOrWhiteSpace(site) ? BaseUrl : $"{BaseUrl}/sites/{site}";
+         return string.IsNullOrEmpty(site) ? BaseUrl : site.StartsWith("/sites/") ? string.Format("{0}{1}", this.BaseUrl, site) : string.Format("{0}/sites/{1}", this.BaseUrl, site);
     }
-
 
     public string GetBaseUrl()
     {
