@@ -125,6 +125,8 @@ public static class SharePointExtensions
         using (var stream = new MemoryStream(file))
         {
             var list = context.Web.Lists.EnsureSiteAssetsLibrary();
+            context.Load(list, l => l.RootFolder.UniqueId);
+            await context.ExecuteQueryRetryAsync();
             var folder = context.Web.GetFolderById(list.RootFolder.UniqueId);
             return await folder.UploadFileAsync(fileName, stream, true);
         }
