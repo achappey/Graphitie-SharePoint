@@ -64,6 +64,9 @@ public static class SharePointExtensions
     public static async Task SupplyContentType(this ClientContext context, string item)
     {
         var contentTypes = context.Web.ContentTypes;
+
+        context.Load(contentTypes, a => a.Include(z => z.StringId));
+        
         await context.ExecuteQueryRetryAsync();
 
         if (!contentTypes.Select(t => t.StringId).Contains(item))
