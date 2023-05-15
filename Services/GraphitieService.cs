@@ -9,7 +9,7 @@ public interface IGraphitieService
     public Task DeleteMember(string siteUrl, string userId);
     public Task AddLogo(string logoUrl, string siteUrl);
     public Task AddTheme(string themeUrl, string siteUrl);
-    public Task AddQuickLaunchLink(string siteUrl, string name, string link, string previousLinkName = "");
+    public Task AddQuickLaunchLinkAsync(string siteUrl, string name, string link, string previousLinkName = "");
     public Task ActivateFeature(string siteUrl, string featureId);
 
 }
@@ -54,9 +54,9 @@ public class GraphitieService : IGraphitieService
         await this._microsoftService.DeleteSiteMember(siteId, userId);
     }
 
-    public async Task AddQuickLaunchLink(string siteUrl, string name, string link, string previousLinkName = "")
+    public async Task AddQuickLaunchLinkAsync(string siteUrl, string name, string link, string previousLinkName = "")
     {
-        await this._microsoftService.AddQuickLaunchLink(siteUrl, name, link, previousLinkName);
+        await this._microsoftService.AddQuickLaunchLinkAsync(siteUrl, name, link, previousLinkName);
     }
 
     public async Task ActivateFeature(string siteUrl, string featureId)

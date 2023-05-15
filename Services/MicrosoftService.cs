@@ -12,7 +12,7 @@ public interface IMicrosoftService
     public Task AddSiteMember(string siteId, string userId);
     public Task DeleteSiteMember(string siteId, string userId);
     public Task DeleteSiteOwner(string siteId, string userId);
-    public Task AddQuickLaunchLink(string siteUrl, string name, string link, string previousLinkName = "");
+    public Task AddQuickLaunchLinkAsync(string siteUrl, string name, string link, string previousLinkName = "");
     public Task ActivateFeature(string siteUrl, string featureId);
     public Task RenameSite(string siteUrl, string name);
     public Task AddContentType(string siteUrl, string contentType, string listName);
@@ -79,18 +79,29 @@ public class MicrosoftService : IMicrosoftService
 
     }
 
-    public async Task AddQuickLaunchLink(string siteUrl, string name, string link, string previousLinkName = "")
+    /// <summary>
+    /// Adds a new quick launch link to the specified SharePoint site.
+    /// </summary>
+    /// <param name="siteUrl">The URL of the SharePoint site.</param>
+    /// <param name="name">The display name of the new quick launch link.</param>
+    /// <param name="link">The URL of the new quick launch link.</param>
+    /// <param name="previousLinkName">The display name of the link that the new link should be placed after (optional).</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public async Task AddQuickLaunchLinkAsync(string siteUrl, string name, string link, string previousLinkName = "")
     {
-        using var context = this._sharePointService.GetContext(siteUrl);
-        var quickLaunch = context.Web.Navigation.QuickLaunch;
+        if (string.IsNullOrEmpty(siteUrl)) throw new ArgumentNullException(nameof(siteUrl));
+        if (string.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
+        if (string.IsNullOrEmpty(link)) throw new ArgumentNullException(nameof(link));
 
-        context.Load(quickLaunch);
-
-        await context.ExecuteQueryRetryAsync();
-
-        if (quickLaunch.All(r => r.Url != link))
+        using (var context = _sharePointService.GetContext(siteUrl))
         {
-            NavigationNodeCreationInformation newNode = new NavigationNodeCreationInformation()
+            var quickLaunch = context.Web.Navigation.QuickLaunch;
+            context.Load(quickLaunch);
+            await context.ExecuteQueryRetryAsync();
+
+            if (quickLaunch.Any(r => r.Url == link)) return;
+
+            NavigationNodeCreationInformation newNode = new NavigationNodeCreationInformation
             {
                 Title = name,
                 Url = link
@@ -102,11 +113,10 @@ public class MicrosoftService : IMicrosoftService
             }
 
             quickLaunch.Add(newNode);
-
             await context.ExecuteQueryRetryAsync();
         }
-
     }
+
 
     public async Task AddSiteLogo(string logo, string targetSite)
     {

@@ -17,10 +17,26 @@ public class SharePointService : ISharePointService
     private readonly string _clientId;
     private readonly string _clientSecret;
 
+    /// <summary>
+    /// Converts a site path to a tenant URL by appending it to the base URL.
+    /// </summary>
+    /// <param name="site">The site path to convert.</param>
+    /// <returns>The tenant URL.</returns>
     private string ToTenantUrl(string site)
     {
-         return string.IsNullOrEmpty(site) ? BaseUrl : site.StartsWith("/sites/") ? string.Format("{0}{1}", this.BaseUrl, site) : string.Format("{0}/sites/{1}", this.BaseUrl, site);
+        if (string.IsNullOrWhiteSpace(site))
+        {
+            return BaseUrl;
+        }
+
+        if (site.StartsWith("/sites/", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"{BaseUrl}{site}";
+        }
+
+        return $"{BaseUrl}/sites/{site}";
     }
+
 
     public string GetBaseUrl()
     {
