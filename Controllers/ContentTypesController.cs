@@ -16,13 +16,22 @@ public class ContentTypesController : ControllerBase
         _logger = logger;
         _microsoftService = microsoftService;
     }
-    
+
     [HttpPost("Add", Name = "AddContentType")]
     public async Task<IActionResult> AddContentType(string siteUrl, string name, string listTitle)
     {
         await _microsoftService.AddContentType(siteUrl, name, listTitle);
-        
+
         return new OkResult();
+
+    }
+
+    [HttpGet("Get", Name = "GetContentTypes")]
+    public async Task<IActionResult> GetContentTypes(string siteUrl)
+    {
+        var result = await _microsoftService.GetAllContentTypes(siteUrl);
+
+        return new ObjectResult(result);
 
     }
 

@@ -1,9 +1,33 @@
+using Graphitie.Models;
 using Microsoft.SharePoint.Client;
 
 namespace Graphitie.Extensions;
 
 public static class SharePointExtensions
 {
+    public static async Task<List<ContentTypeDetails>> GetAllContentTypes(this ClientContext context)
+    {
+        List<ContentTypeDetails> contentTypeDetailsList = new();
+
+        var contentTypes = context.Site.RootWeb.ContentTypes;
+        context.Load(contentTypes);
+        await context.ExecuteQueryRetryAsync();
+
+        foreach (var contentType in contentTypes)
+        {
+            var details = new ContentTypeDetails
+            {
+                Name = contentType.Name,
+                Category = contentType.Group, // Aannemend dat 'Group' hier de categorie vertegenwoordigt.
+                Link = contentType.DocumentTemplateUrl // Of een relevante eigenschap voor de 'Link'.
+            };
+
+            contentTypeDetailsList.Add(details);
+        }
+
+        return contentTypeDetailsList;
+    }
+
     public static async Task SetDefaultContentType(this ClientContext context, string listTitle, string contentType)
     {
 
@@ -19,6 +43,25 @@ public static class SharePointExtensions
         {
             list.SetDefaultContentType(contentTypes.First(e => e.Name == contentType).StringId);
         }
+    }
+
+    public static async Task<List<string>> GetAllDocumentLibraryTitles(this ClientContext context)
+    {
+        List<string> libraryTitles = new List<string>();
+
+        var lists = context.Web.Lists;
+        context.Load(lists, l => l.Include(list => list.Title, list => list.BaseTemplate));
+        await context.ExecuteQueryRetryAsync();
+
+        foreach (var list in lists)
+        {
+            if (list.BaseTemplate == 101)
+            {
+                libraryTitles.Add(list.Title);
+            }
+        }
+
+        return libraryTitles;
     }
 
     public static async Task AddContentTypeToList(this ClientContext context, string listTitle, string contentType)
@@ -66,7 +109,7 @@ public static class SharePointExtensions
         var contentTypes = context.Web.ContentTypes;
 
         context.Load(contentTypes, a => a.Include(z => z.StringId));
-        
+
         await context.ExecuteQueryRetryAsync();
 
         if (!contentTypes.Select(t => t.StringId).Contains(item))
@@ -115,7 +158,7 @@ public static class SharePointExtensions
 
         await context.ExecuteQueryRetryAsync();
 
-        using (MemoryStream memoryStream = new MemoryStream())
+        using (MemoryStream memoryStream = new())
         {
             await stream.Value.CopyToAsync(memoryStream);
 

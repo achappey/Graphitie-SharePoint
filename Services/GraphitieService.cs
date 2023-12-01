@@ -32,37 +32,37 @@ public class GraphitieService : IGraphitieService
 
     public async Task AddVisitor(string siteId, string userId)
     {
-        await this._microsoftService.AddSiteVisitor(siteId, userId);
+        await _microsoftService.AddSiteVisitor(siteId, userId);
     }
 
     public async Task AddLogo(string logoUrl, string siteUrl)
     {
-        await this._microsoftService.AddSiteLogo(logoUrl, siteUrl);
+        await _microsoftService.AddSiteLogo(logoUrl, siteUrl);
     }
 
     public async Task AddTheme(string logoUrl, string siteUrl)
     {
-        await this._microsoftService.AddSiteTheme(logoUrl, siteUrl);
+        await _microsoftService.AddSiteTheme(logoUrl, siteUrl);
     }
 
     public async Task AddMember(string siteId, string userId)
     {
-        await this._microsoftService.AddSiteMember(siteId, userId);
+        await _microsoftService.AddSiteMember(siteId, userId);
     }
     public async Task DeleteMember(string siteId, string userId)
     {
-        await this._microsoftService.DeleteSiteMember(siteId, userId);
+        await _microsoftService.DeleteSiteMember(siteId, userId);
     }
 
     public async Task AddQuickLaunchLinkAsync(string siteUrl, string name, string link, string previousLinkName = "")
     {
-        await this._microsoftService.AddQuickLaunchLinkAsync(siteUrl, name, link, previousLinkName);
+        await _microsoftService.AddQuickLaunchLinkAsync(siteUrl, name, link, previousLinkName);
     }
 
     public async Task ActivateFeature(string siteUrl, string featureId)
 
     {
-        await this._microsoftService.ActivateFeature(siteUrl, featureId);
+        await _microsoftService.ActivateFeature(siteUrl, featureId);
     }
 
 }

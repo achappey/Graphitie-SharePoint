@@ -1,4 +1,5 @@
 using Graphitie.Extensions;
+using Graphitie.Models;
 using Microsoft.SharePoint.Client;
 
 namespace Graphitie.Services;
@@ -17,6 +18,7 @@ public interface IMicrosoftService
     public Task RenameSite(string siteUrl, string name);
     public Task AddContentType(string siteUrl, string contentType, string listName);
     public void DeleteContentType(string siteUrl, string contentType, string listName, bool ignoreInUseException = false);
+    public Task<List<ContentTypeDetails>> GetAllContentTypes(string siteUrl);
 }
 
 public class MicrosoftService : IMicrosoftService
@@ -32,28 +34,44 @@ public class MicrosoftService : IMicrosoftService
 
     public void DeleteContentType(string siteUrl, string contentType, string listName, bool ignoreInUseException = false)
     {
-        using var context = this._sharePointService.GetContext(siteUrl);
+        using var context = _sharePointService.GetContext(siteUrl);
 
         context.RemoveContentTypeFromList(listName, contentType, ignoreInUseException);
     }
 
     public async Task SetDefaultContentType(string siteUrl, string contentType, string listName)
     {
-        using var context = this._sharePointService.GetContext(siteUrl);
+        using var context = _sharePointService.GetContext(siteUrl);
 
         await context.SetDefaultContentType(listName, contentType);
+
+    }
+      public Task<List<string>> GetAllDocumentLibraries(string siteUrl)
+    {
+        using var context = _sharePointService.GetContext(siteUrl);
+
+        return context.GetAllDocumentLibraryTitles();
+
+    }
+
+
+    public Task<List<ContentTypeDetails>> GetAllContentTypes(string siteUrl)
+    {
+        using var context = _sharePointService.GetContext(siteUrl);
+
+        return context.GetAllContentTypes();
 
     }
 
     public async Task AddContentType(string siteUrl, string contentType, string listName)
     {
-        using var context = this._sharePointService.GetContext(siteUrl);
+        using var context = _sharePointService.GetContext(siteUrl);
 
         var currentContentTypes = await context.GetContentTypeNames();
 
         if (!currentContentTypes.Contains(contentType))
         {
-            var hubContext = this._sharePointService.GetContext("contentTypeHub");
+            var hubContext = _sharePointService.GetContext("contentTypeHub");
 
             var contentTypeId = await hubContext.GetContentTypeId(contentType);
 
@@ -69,7 +87,7 @@ public class MicrosoftService : IMicrosoftService
     public async Task ActivateFeature(string siteUrl, string featureId)
     {
         var guid = new Guid(featureId);
-        using var context = this._sharePointService.GetContext(siteUrl);
+        using var context = _sharePointService.GetContext(siteUrl);
         var active = await context.Site.IsFeatureActiveAsync(guid);
 
         if (!active)
@@ -101,7 +119,7 @@ public class MicrosoftService : IMicrosoftService
 
             if (quickLaunch.Any(r => r.Url == link)) return;
 
-            NavigationNodeCreationInformation newNode = new NavigationNodeCreationInformation
+            NavigationNodeCreationInformation newNode = new()
             {
                 Title = name,
                 Url = link
@@ -120,8 +138,8 @@ public class MicrosoftService : IMicrosoftService
 
     public async Task AddSiteLogo(string logo, string targetSite)
     {
-        using (var context = this._sharePointService.GetContext(logo.ExtractSiteUrl()))
-        using (var targetContext = this._sharePointService.GetContext(targetSite))
+        using (var context = _sharePointService.GetContext(logo.ExtractSiteUrl()))
+        using (var targetContext = _sharePointService.GetContext(targetSite))
         {
             var logoFile = await context.GetFile(logo);
             var file = await targetContext.UploadToSiteAssets(logoFile.Item1, logoFile.Item2);
@@ -134,7 +152,7 @@ public class MicrosoftService : IMicrosoftService
 
     public async Task RenameSite(string siteUrl, string name)
     {
-        using (var targetContext = this._sharePointService.GetContext(siteUrl))
+        using (var targetContext = _sharePointService.GetContext(siteUrl))
         {
             targetContext.Web.Title = name;
             targetContext.Web.Update();
@@ -145,8 +163,8 @@ public class MicrosoftService : IMicrosoftService
     }
     public async Task AddSiteTheme(string themeUrl, string targetSite)
     {
-        using var context = this._sharePointService.GetContext(themeUrl.ExtractSiteUrl());
-        using var targetContext = this._sharePointService.GetContext(targetSite);
+        using var context = _sharePointService.GetContext(themeUrl.ExtractSiteUrl());
+        using var targetContext = _sharePointService.GetContext(targetSite);
         var logoFile = await context.GetFile(themeUrl);
         var file = await targetContext.UploadToSiteAssets(logoFile.Item1, logoFile.Item2);
 
@@ -158,7 +176,7 @@ public class MicrosoftService : IMicrosoftService
 
     public async Task AddSiteVisitor(string siteId, string userId)
     {
-        using (var context = this._sharePointService.GetContext(siteId))
+        using (var context = _sharePointService.GetContext(siteId))
         {
             var user = context.Web.EnsureUser(userId);
             var spGroup = context.Web.AssociatedVisitorGroup;
@@ -169,7 +187,7 @@ public class MicrosoftService : IMicrosoftService
 
     public async Task AddSiteOwner(string siteId, string userId)
     {
-        using (var context = this._sharePointService.GetContext(siteId))
+        using (var context = _sharePointService.GetContext(siteId))
         {
             var user = context.Web.EnsureUser(userId);
             var spGroup = context.Web.AssociatedOwnerGroup;
@@ -182,7 +200,7 @@ public class MicrosoftService : IMicrosoftService
     public async Task AddSiteMember(string siteId, string userId)
     {
 
-        using (var context = this._sharePointService.GetContext(siteId))
+        using (var context = _sharePointService.GetContext(siteId))
         {
             var user = context.Web.EnsureUser(userId);
             var spGroup = context.Web.AssociatedMemberGroup;
@@ -194,7 +212,7 @@ public class MicrosoftService : IMicrosoftService
 
     public async Task DeleteSiteMember(string siteId, string userId)
     {
-        using (var context = this._sharePointService.GetContext(siteId))
+        using (var context = _sharePointService.GetContext(siteId))
         {
             var user = context.Web.EnsureUser(userId);
             var spGroup = context.Web.AssociatedMemberGroup;
@@ -206,7 +224,7 @@ public class MicrosoftService : IMicrosoftService
 
     public async Task DeleteSiteOwner(string siteId, string userId)
     {
-        using (var context = this._sharePointService.GetContext(siteId))
+        using (var context = _sharePointService.GetContext(siteId))
         {
             var user = context.Web.EnsureUser(userId);
             var spGroup = context.Web.AssociatedOwnerGroup;

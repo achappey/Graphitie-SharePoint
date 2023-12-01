@@ -40,29 +40,29 @@ public class SharePointService : ISharePointService
 
     public string GetBaseUrl()
     {
-        return this.BaseUrl;
+        return BaseUrl;
     }
 
     private string BaseUrl
     {
         get
         {
-            return $"https://{this._tenantName}.sharepoint.com";
+            return $"https://{_tenantName}.sharepoint.com";
         }
     }
 
     public SharePointService(string tenantName, string clientId, string clientSecret)
     {
-        this._tenantName = tenantName;
-        this._clientId = clientId;
-        this._clientSecret = clientSecret;
+        _tenantName = tenantName;
+        _clientId = clientId;
+        _clientSecret = clientSecret;
     }
 
     public ClientContext GetContext(string url)
     {
-        AuthenticationManager authManager = new AuthenticationManager();
+        AuthenticationManager authManager = new();
 
-        return authManager.GetACSAppOnlyContext(this.ToTenantUrl(url), this._clientId, this._clientSecret);
+        return authManager.GetACSAppOnlyContext(ToTenantUrl(url), _clientId, _clientSecret);
     }
 
 }
