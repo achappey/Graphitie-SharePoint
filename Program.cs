@@ -16,22 +16,18 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc(version, new OpenApiInfo { Title = appConfig.SharePoint.TenantName, Version = version });
+    c.SwaggerDoc(version, new OpenApiInfo { Title = appConfig!.SharePoint.TenantName, Version = version });
 
     c.DocInclusionPredicate((docName, apiDesc) =>
     {
-        return apiDesc.RelativePath != null ? docName == odataEndpoint ?
-            apiDesc.RelativePath.Contains(odataEndpoint) : !apiDesc.RelativePath.Contains(odataEndpoint) : false;
+        return apiDesc.RelativePath != null && (docName == odataEndpoint ?
+            apiDesc.RelativePath.Contains(odataEndpoint) : !apiDesc.RelativePath.Contains(odataEndpoint));
     });
 });
 
-builder.Services.AddAutoMapper(
-          typeof(Graphitie.Profiles.Microsoft.MicrosoftProfile)
-      );
-
 builder.Services.AddScoped<GraphitieService>();
 builder.Services.AddScoped<MicrosoftService>();
-builder.Services.AddScoped<SharePointService>(y => new SharePointService(appConfig.SharePoint.TenantName, appConfig.SharePoint.ClientId, appConfig.SharePoint.ClientSecret));
+builder.Services.AddScoped(y => new SharePointService(appConfig!.SharePoint.TenantName, appConfig.SharePoint.ClientId, appConfig.SharePoint.ClientSecret));
 
 builder.Services.AddHttpClient();
 
@@ -40,7 +36,7 @@ builder.Services.AddControllers();
 var microsoft = builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
           .AddMicrosoftIdentityWebApp(builder.Configuration)
           .EnableTokenAcquisitionToCallDownstreamApi()
-            .AddMicrosoftGraphAppOnly(authenticationProvider => new GraphServiceClient(new ClientSecretCredential(appConfig.AzureAd.TenantId,
+            .AddMicrosoftGraphAppOnly(authenticationProvider => new GraphServiceClient(new ClientSecretCredential(appConfig!.AzureAd.TenantId,
                 appConfig.AzureAd.ClientId,
                 appConfig.AzureAd.ClientSecret)))
           .AddInMemoryTokenCaches();
@@ -56,11 +52,9 @@ app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint(
         string.Format("/swagger/{0}/swagger.json", version),
-        string.Format("{0} {1}", appConfig.SharePoint.TenantName, version));
+        string.Format("{0} {1}", appConfig!.SharePoint.TenantName, version));
 });
 
 app.UseHttpsRedirection();
-
 app.MapControllers();
-
 app.Run();

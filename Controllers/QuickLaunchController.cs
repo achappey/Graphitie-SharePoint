@@ -6,17 +6,11 @@ namespace Graphitie.Controllers.Microsoft;
 
 [ApiController]
 [Route("[controller]")]
-public class QuickLaunchController : ControllerBase
+public class QuickLaunchController(ILogger<QuickLaunchController> logger, GraphitieService graphitieService) : ControllerBase
 {
-    private readonly ILogger<QuickLaunchController> _logger;
+    private readonly ILogger<QuickLaunchController> _logger = logger;
 
-    private readonly GraphitieService _graphitieService;
-
-    public QuickLaunchController(ILogger<QuickLaunchController> logger, GraphitieService graphitieService)
-    {
-        _logger = logger;
-        _graphitieService = graphitieService;
-    }
+    private readonly GraphitieService _graphitieService = graphitieService;
 
     /// <summary>
     /// Adds a new quick launch link to the specified SharePoint site.

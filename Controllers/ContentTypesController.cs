@@ -5,17 +5,11 @@ namespace Graphitie.Controllers.Microsoft;
 
 [ApiController]
 [Route("[controller]")]
-public class ContentTypesController : ControllerBase
+public class ContentTypesController(ILogger<ContentTypesController> logger, MicrosoftService microsoftService) : ControllerBase
 {
-    private readonly ILogger<ContentTypesController> _logger;
+    private readonly ILogger<ContentTypesController> _logger = logger;
 
-    private readonly MicrosoftService _microsoftService;
-
-    public ContentTypesController(ILogger<ContentTypesController> logger, MicrosoftService microsoftService)
-    {
-        _logger = logger;
-        _microsoftService = microsoftService;
-    }
+    private readonly MicrosoftService _microsoftService = microsoftService;
 
     [HttpPost("Add", Name = "AddContentType")]
     public async Task<IActionResult> AddContentType(string siteUrl, string name, string listTitle)

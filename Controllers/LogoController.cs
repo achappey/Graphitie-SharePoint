@@ -5,18 +5,12 @@ namespace Graphitie.Controllers.Microsoft;
 
 [ApiController]
 [Route("[controller]")]
-public class LogoController : ControllerBase
+public class LogoController(ILogger<LogoController> logger, GraphitieService graphitieService) : ControllerBase
 {
-    private readonly ILogger<LogoController> _logger;
+    private readonly ILogger<LogoController> _logger = logger;
 
-    private readonly GraphitieService _graphitieService;
+    private readonly GraphitieService _graphitieService = graphitieService;
 
-    public LogoController(ILogger<LogoController> logger, GraphitieService graphitieService)
-    {
-        _logger = logger;
-        _graphitieService = graphitieService;
-    }
-    
     [HttpPost(Name = "AddLogo")]
     public async Task AddLogo(string logoUrl, string targetSite)
     {

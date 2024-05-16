@@ -5,18 +5,12 @@ namespace Graphitie.Controllers.Microsoft;
 
 [ApiController]
 [Route("[controller]")]
-public class SettingsController : ControllerBase
+public class SettingsController(ILogger<SettingsController> logger, MicrosoftService microsoftService) : ControllerBase
 {
-    private readonly ILogger<SettingsController> _logger;
+    private readonly ILogger<SettingsController> _logger = logger;
 
-    private readonly MicrosoftService _microsoftService;
+    private readonly MicrosoftService _microsoftService = microsoftService;
 
-    public SettingsController(ILogger<SettingsController> logger, MicrosoftService microsoftService)
-    {
-        _logger = logger;
-        _microsoftService = microsoftService;
-    }
-    
     [HttpPost(Name = "Rename")]
     public async Task Rename(string siteUrl, string name)
     {

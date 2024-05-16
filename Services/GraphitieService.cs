@@ -1,4 +1,3 @@
-using AutoMapper;
 
 namespace Graphitie.Services;
 
@@ -14,55 +13,43 @@ public interface IGraphitieService
 
 }
 
-public class GraphitieService : IGraphitieService
+public class GraphitieService(MicrosoftService microsoftService) : IGraphitieService
 {
-    private readonly Microsoft.Graph.GraphServiceClient _graphServiceClient;
-    private readonly IMicrosoftService _microsoftService;
-    private readonly IMapper _mapper;
+    private readonly IMicrosoftService _microsoftService = microsoftService;
 
-    public GraphitieService(Microsoft.Graph.GraphServiceClient graphServiceClient,
-    IMapper mapper,
-    MicrosoftService microsoftService)
+    public Task AddVisitor(string siteId, string userId)
     {
-        _graphServiceClient = graphServiceClient;
-        _microsoftService = microsoftService;
-        _mapper = mapper;
+        return _microsoftService.AddSiteVisitor(siteId, userId);
     }
 
-
-    public async Task AddVisitor(string siteId, string userId)
+    public Task AddLogo(string logoUrl, string siteUrl)
     {
-        await _microsoftService.AddSiteVisitor(siteId, userId);
+        return _microsoftService.AddSiteLogo(logoUrl, siteUrl);
     }
 
-    public async Task AddLogo(string logoUrl, string siteUrl)
+    public Task AddTheme(string logoUrl, string siteUrl)
     {
-        await _microsoftService.AddSiteLogo(logoUrl, siteUrl);
+        return _microsoftService.AddSiteTheme(logoUrl, siteUrl);
     }
 
-    public async Task AddTheme(string logoUrl, string siteUrl)
+    public Task AddMember(string siteId, string userId)
     {
-        await _microsoftService.AddSiteTheme(logoUrl, siteUrl);
+        return _microsoftService.AddSiteMember(siteId, userId);
+    }
+    public Task DeleteMember(string siteId, string userId)
+    {
+        return _microsoftService.DeleteSiteMember(siteId, userId);
     }
 
-    public async Task AddMember(string siteId, string userId)
+    public Task AddQuickLaunchLinkAsync(string siteUrl, string name, string link, string previousLinkName = "")
     {
-        await _microsoftService.AddSiteMember(siteId, userId);
-    }
-    public async Task DeleteMember(string siteId, string userId)
-    {
-        await _microsoftService.DeleteSiteMember(siteId, userId);
+        return _microsoftService.AddQuickLaunchLinkAsync(siteUrl, name, link, previousLinkName);
     }
 
-    public async Task AddQuickLaunchLinkAsync(string siteUrl, string name, string link, string previousLinkName = "")
-    {
-        await _microsoftService.AddQuickLaunchLinkAsync(siteUrl, name, link, previousLinkName);
-    }
-
-    public async Task ActivateFeature(string siteUrl, string featureId)
+    public Task ActivateFeature(string siteUrl, string featureId)
 
     {
-        await _microsoftService.ActivateFeature(siteUrl, featureId);
+        return _microsoftService.ActivateFeature(siteUrl, featureId);
     }
 
 }

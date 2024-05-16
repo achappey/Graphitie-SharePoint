@@ -1,5 +1,4 @@
 using Microsoft.SharePoint.Client;
-
 using PnP.Framework;
 
 namespace Graphitie.Services;
@@ -11,11 +10,11 @@ public interface ISharePointService
 
 }
 
-public class SharePointService : ISharePointService
+public class SharePointService(string tenantName, string clientId, string clientSecret) : ISharePointService
 {
-    private readonly string _tenantName;
-    private readonly string _clientId;
-    private readonly string _clientSecret;
+    private readonly string _tenantName = tenantName;
+    private readonly string _clientId = clientId;
+    private readonly string _clientSecret = clientSecret;
 
     /// <summary>
     /// Converts a site path to a tenant URL by appending it to the base URL.
@@ -49,13 +48,6 @@ public class SharePointService : ISharePointService
         {
             return $"https://{_tenantName}.sharepoint.com";
         }
-    }
-
-    public SharePointService(string tenantName, string clientId, string clientSecret)
-    {
-        _tenantName = tenantName;
-        _clientId = clientId;
-        _clientSecret = clientSecret;
     }
 
     public ClientContext GetContext(string url)

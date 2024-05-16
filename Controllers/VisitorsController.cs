@@ -5,17 +5,11 @@ namespace Graphitie.Controllers.Microsoft;
 
 [ApiController]
 [Route("[controller]")]
-public class VisitorsController : ControllerBase
+public class VisitorsController(ILogger<VisitorsController> logger, GraphitieService graphitieService) : ControllerBase
 {
-    private readonly ILogger<VisitorsController> _logger;
+    private readonly ILogger<VisitorsController> _logger = logger;
 
-    private readonly GraphitieService _graphitieService;
-
-    public VisitorsController(ILogger<VisitorsController> logger, GraphitieService graphitieService)
-    {
-        _logger = logger;
-        _graphitieService = graphitieService;
-    }
+    private readonly GraphitieService _graphitieService = graphitieService;
 
     [HttpPost(Name = "AddVisitor")]
     public async Task AddVisitor(string siteId, string userId)

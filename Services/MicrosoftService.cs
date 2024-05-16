@@ -21,16 +21,9 @@ public interface IMicrosoftService
     public Task<List<ContentTypeDetails>> GetAllContentTypes(string siteUrl);
 }
 
-public class MicrosoftService : IMicrosoftService
+public class MicrosoftService(SharePointService sharePointService) : IMicrosoftService
 {
-    private readonly Microsoft.Graph.GraphServiceClient _graphServiceClient;
-    private readonly SharePointService _sharePointService;
-
-    public MicrosoftService(Microsoft.Graph.GraphServiceClient graphServiceClient, SharePointService sharePointService)
-    {
-        _graphServiceClient = graphServiceClient;
-        _sharePointService = sharePointService;
-    }
+    private readonly SharePointService _sharePointService = sharePointService;
 
     public void DeleteContentType(string siteUrl, string contentType, string listName, bool ignoreInUseException = false)
     {
@@ -39,14 +32,14 @@ public class MicrosoftService : IMicrosoftService
         context.RemoveContentTypeFromList(listName, contentType, ignoreInUseException);
     }
 
-    public async Task SetDefaultContentType(string siteUrl, string contentType, string listName)
+    public Task SetDefaultContentType(string siteUrl, string contentType, string listName)
     {
         using var context = _sharePointService.GetContext(siteUrl);
 
-        await context.SetDefaultContentType(listName, contentType);
+        return context.SetDefaultContentType(listName, contentType);
 
     }
-      public Task<List<string>> GetAllDocumentLibraries(string siteUrl)
+    public Task<List<string>> GetAllDocumentLibraries(string siteUrl)
     {
         using var context = _sharePointService.GetContext(siteUrl);
 
@@ -111,54 +104,48 @@ public class MicrosoftService : IMicrosoftService
         if (string.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
         if (string.IsNullOrEmpty(link)) throw new ArgumentNullException(nameof(link));
 
-        using (var context = _sharePointService.GetContext(siteUrl))
+        using var context = _sharePointService.GetContext(siteUrl);
+        var quickLaunch = context.Web.Navigation.QuickLaunch;
+        context.Load(quickLaunch);
+        await context.ExecuteQueryRetryAsync();
+
+        if (quickLaunch.Any(r => r.Url == link)) return;
+
+        NavigationNodeCreationInformation newNode = new()
         {
-            var quickLaunch = context.Web.Navigation.QuickLaunch;
-            context.Load(quickLaunch);
-            await context.ExecuteQueryRetryAsync();
+            Title = name,
+            Url = link
+        };
 
-            if (quickLaunch.Any(r => r.Url == link)) return;
-
-            NavigationNodeCreationInformation newNode = new()
-            {
-                Title = name,
-                Url = link
-            };
-
-            if (!string.IsNullOrEmpty(previousLinkName))
-            {
-                newNode.PreviousNode = quickLaunch.FirstOrDefault(a => a.Title == previousLinkName);
-            }
-
-            quickLaunch.Add(newNode);
-            await context.ExecuteQueryRetryAsync();
+        if (!string.IsNullOrEmpty(previousLinkName))
+        {
+            newNode.PreviousNode = quickLaunch.FirstOrDefault(a => a.Title == previousLinkName);
         }
+
+        quickLaunch.Add(newNode);
+        await context.ExecuteQueryRetryAsync();
     }
 
 
     public async Task AddSiteLogo(string logo, string targetSite)
     {
-        using (var context = _sharePointService.GetContext(logo.ExtractSiteUrl()))
-        using (var targetContext = _sharePointService.GetContext(targetSite))
-        {
-            var logoFile = await context.GetFile(logo);
-            var file = await targetContext.UploadToSiteAssets(logoFile.Item1, logoFile.Item2);
-            targetContext.Web.SiteLogoUrl = file.ServerRelativeUrl;
-            targetContext.Web.Update();
-            await targetContext.ExecuteQueryRetryAsync();
-        }
+        using var context = _sharePointService.GetContext(logo.ExtractSiteUrl());
+        using var targetContext = _sharePointService.GetContext(targetSite);
+        var logoFile = await context.GetFile(logo);
+        var file = await targetContext.UploadToSiteAssets(logoFile.Item1, logoFile.Item2);
+        targetContext.Web.SiteLogoUrl = file.ServerRelativeUrl;
+        targetContext.Web.Update();
+        await targetContext.ExecuteQueryRetryAsync();
     }
 
 
-    public async Task RenameSite(string siteUrl, string name)
+    public Task RenameSite(string siteUrl, string name)
     {
-        using (var targetContext = _sharePointService.GetContext(siteUrl))
-        {
-            targetContext.Web.Title = name;
-            targetContext.Web.Update();
+        using var targetContext = _sharePointService.GetContext(siteUrl);
+        targetContext.Web.Title = name;
+        targetContext.Web.Update();
 
-            await targetContext.ExecuteQueryRetryAsync();
-        }
+        return targetContext.ExecuteQueryRetryAsync();
 
     }
     public async Task AddSiteTheme(string themeUrl, string targetSite)
@@ -174,62 +161,51 @@ public class MicrosoftService : IMicrosoftService
     }
 
 
-    public async Task AddSiteVisitor(string siteId, string userId)
+    public Task AddSiteVisitor(string siteId, string userId)
     {
-        using (var context = _sharePointService.GetContext(siteId))
-        {
-            var user = context.Web.EnsureUser(userId);
-            var spGroup = context.Web.AssociatedVisitorGroup;
-            spGroup.Users.AddUser(user);
-            await context.ExecuteQueryRetryAsync();
-        }
+        using var context = _sharePointService.GetContext(siteId);
+        var user = context.Web.EnsureUser(userId);
+        var spGroup = context.Web.AssociatedVisitorGroup;
+        spGroup.Users.AddUser(user);
+        return context.ExecuteQueryRetryAsync();
     }
 
-    public async Task AddSiteOwner(string siteId, string userId)
+    public Task AddSiteOwner(string siteId, string userId)
     {
-        using (var context = _sharePointService.GetContext(siteId))
-        {
-            var user = context.Web.EnsureUser(userId);
-            var spGroup = context.Web.AssociatedOwnerGroup;
-            spGroup.Users.AddUser(user);
-            await context.ExecuteQueryRetryAsync();
-
-        }
+        using var context = _sharePointService.GetContext(siteId);
+        var user = context.Web.EnsureUser(userId);
+        var spGroup = context.Web.AssociatedOwnerGroup;
+        spGroup.Users.AddUser(user);
+        return context.ExecuteQueryRetryAsync();
     }
 
-    public async Task AddSiteMember(string siteId, string userId)
+    public Task AddSiteMember(string siteId, string userId)
     {
 
-        using (var context = _sharePointService.GetContext(siteId))
-        {
-            var user = context.Web.EnsureUser(userId);
-            var spGroup = context.Web.AssociatedMemberGroup;
-            spGroup.Users.AddUser(user);
-            await context.ExecuteQueryRetryAsync();
-        }
+        using var context = _sharePointService.GetContext(siteId);
+        var user = context.Web.EnsureUser(userId);
+        var spGroup = context.Web.AssociatedMemberGroup;
+        spGroup.Users.AddUser(user);
+        return context.ExecuteQueryRetryAsync();
 
     }
 
-    public async Task DeleteSiteMember(string siteId, string userId)
+    public Task DeleteSiteMember(string siteId, string userId)
     {
-        using (var context = _sharePointService.GetContext(siteId))
-        {
-            var user = context.Web.EnsureUser(userId);
-            var spGroup = context.Web.AssociatedMemberGroup;
-            spGroup.Users.Remove(user);
-            await context.ExecuteQueryRetryAsync();
-        }
+        using var context = _sharePointService.GetContext(siteId);
+        var user = context.Web.EnsureUser(userId);
+        var spGroup = context.Web.AssociatedMemberGroup;
+        spGroup.Users.Remove(user);
+        return context.ExecuteQueryRetryAsync();
     }
 
 
-    public async Task DeleteSiteOwner(string siteId, string userId)
+    public Task DeleteSiteOwner(string siteId, string userId)
     {
-        using (var context = _sharePointService.GetContext(siteId))
-        {
-            var user = context.Web.EnsureUser(userId);
-            var spGroup = context.Web.AssociatedOwnerGroup;
-            spGroup.Users.Remove(user);
-            await context.ExecuteQueryRetryAsync();
-        }
+        using var context = _sharePointService.GetContext(siteId);
+        var user = context.Web.EnsureUser(userId);
+        var spGroup = context.Web.AssociatedOwnerGroup;
+        spGroup.Users.Remove(user);
+        return context.ExecuteQueryRetryAsync();
     }
 }

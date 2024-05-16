@@ -7,7 +7,7 @@ public static class SharePointExtensions
 {
     public static async Task<List<ContentTypeDetails>> GetAllContentTypes(this ClientContext context)
     {
-        List<ContentTypeDetails> contentTypeDetailsList = new();
+        List<ContentTypeDetails> contentTypeDetailsList = [];
 
         var contentTypes = context.Site.RootWeb.ContentTypes;
         context.Load(contentTypes);
@@ -18,8 +18,8 @@ public static class SharePointExtensions
             var details = new ContentTypeDetails
             {
                 Name = contentType.Name,
-                Category = contentType.Group, // Aannemend dat 'Group' hier de categorie vertegenwoordigt.
-                Link = contentType.DocumentTemplateUrl // Of een relevante eigenschap voor de 'Link'.
+                Category = contentType.Group,
+                Link = contentType.DocumentTemplateUrl
             };
 
             contentTypeDetailsList.Add(details);
@@ -47,7 +47,7 @@ public static class SharePointExtensions
 
     public static async Task<List<string>> GetAllDocumentLibraryTitles(this ClientContext context)
     {
-        List<string> libraryTitles = new List<string>();
+        List<string> libraryTitles = [];
 
         var lists = context.Web.Lists;
         context.Load(lists, l => l.Include(list => list.Title, list => list.BaseTemplate));
@@ -95,11 +95,11 @@ public static class SharePointExtensions
         {
             list.RemoveContentTypeByName(contentType);
         }
-        catch (Exception e)
+        catch (Exception)
         {
             if (!ignoreInUseException)
             {
-                throw e;
+                throw;
             }
         }
     }
@@ -117,9 +117,7 @@ public static class SharePointExtensions
             var sub = new Microsoft.SharePoint.Client.Taxonomy.ContentTypeSync.ContentTypeSubscriber(context);
             var res = sub.SyncContentTypesFromHubSite2(
                 context.Url,
-                new List<string>() {
-                item
-                });
+                [ item ]);
             await context.ExecuteQueryRetryAsync();
         }
     }
@@ -133,7 +131,7 @@ public static class SharePointExtensions
 
         await context.ExecuteQueryAsync();
 
-        return contenttypes.Where(d => name.ToLowerInvariant() == d.Name.ToLowerInvariant())
+        return contenttypes.Where(d => name.Equals(d.Name, StringComparison.InvariantCultureIgnoreCase))
         .Select(d => d.StringId)
         .FirstOrDefault();
     }
@@ -158,24 +156,20 @@ public static class SharePointExtensions
 
         await context.ExecuteQueryRetryAsync();
 
-        using (MemoryStream memoryStream = new())
-        {
-            await stream.Value.CopyToAsync(memoryStream);
+        await using MemoryStream memoryStream = new();
+        await stream.Value.CopyToAsync(memoryStream);
 
-            return Tuple.Create(file.Name, memoryStream.ToArray());
-        }
+        return Tuple.Create(file.Name, memoryStream.ToArray());
     }
 
     public static async Task<Microsoft.SharePoint.Client.File> UploadToSiteAssets(this ClientContext context, string fileName, byte[] file)
     {
-        using (var stream = new MemoryStream(file))
-        {
-            var list = context.Web.Lists.EnsureSiteAssetsLibrary();
-            context.Load(list, l => l.RootFolder.UniqueId);
-            await context.ExecuteQueryRetryAsync();
-            var folder = context.Web.GetFolderById(list.RootFolder.UniqueId);
-            return await folder.UploadFileAsync(fileName, stream, true);
-        }
+        using var stream = new MemoryStream(file);
+        var list = context.Web.Lists.EnsureSiteAssetsLibrary();
+        context.Load(list, l => l.RootFolder.UniqueId);
+        await context.ExecuteQueryRetryAsync();
+        var folder = context.Web.GetFolderById(list.RootFolder.UniqueId);
+        return await folder.UploadFileAsync(fileName, stream, true);
 
     }
 }
